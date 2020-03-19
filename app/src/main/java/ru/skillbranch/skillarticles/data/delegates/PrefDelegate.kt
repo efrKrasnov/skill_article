@@ -4,38 +4,54 @@ import ru.skillbranch.skillarticles.data.local.PrefManager
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
-class PrefDelegate<T: Any>(private val defaultValue: T) :
-    ReadWriteProperty<PrefManager, T?> {
+class PrefDelegate<T: Any>(private val defaultValue: T) {
 
-    @Suppress("UNCHECKED_CAST")
-    override fun getValue(thisRef: PrefManager, property: KProperty<*>): T? {
-        val preferences = thisRef.preferences
-        val key = defaultValue.toString()
-        with(preferences)  {
-            return when(defaultValue) {
-                is Boolean -> getBoolean(key, false) as T
-                is String -> getString(key, "") as T
-                is Float -> getFloat(key, 0.0f) as T
-                is Int-> getInt(key, 0) as T
-                is Long -> getLong(key, 0) as T
-                else -> error("This type cannot be got from preferences")
+    private var storedValue: T? = null
+
+    operator fun provideDelegate(
+        thisRef: PrefManager,
+        prop: KProperty<*>
+    ) : ReadWriteProperty<PrefManager, T?>  {
+        val key = prop.name
+
+        return object : ReadWriteProperty<PrefManager, T?>  {
+
+            override fun getValue(thisRef: PrefManager, property: KProperty<*>): T? {
+                if(storedValue == null) {
+                    val preferences = thisRef.preferences
+                    @Suppress("UNCHECKED_CAST")
+                    storedValue = with (preferences)  {
+                        when(defaultValue) {
+                            is Boolean -> getBoolean(key, defaultValue as Boolean) as T
+                            is String -> getString(key, defaultValue as String) as T
+                            is Float -> getFloat(key, defaultValue as Float) as T
+                            is Int-> getInt(key, defaultValue as Int) as T
+                            is Long -> getLong(key, defaultValue as Long) as T
+                            else -> error("This type cannot be got from preferences")
+                        }
+                    }
+                }
+                return storedValue
+            }
+
+            override fun setValue(thisRef: PrefManager, property: KProperty<*>, value: T?) {
+                val editor = thisRef.preferences.edit()
+                with(editor)  {
+                    when(value) {
+                        is Boolean -> putBoolean(key, value)
+                        is String -> putString(key, value)
+                        is Float -> putFloat(key, value)
+                        is Int-> putInt(key, value)
+                        is Long -> putLong(key, value)
+                        else -> error("This type cannot be stored into preferences")
+                    }
+                    apply()
+                }
+                storedValue = value
             }
         }
+
     }
 
-    override fun setValue(thisRef: PrefManager, property: KProperty<*>, value: T?) {
-        val editor = thisRef.preferences.edit()
-        val key = value!!.toString()
-        with(editor)  {
-            when(value) {
-                is Boolean -> putBoolean(key, value)
-                is String -> putString(key, value)
-                is Float -> putFloat(key, value)
-                is Int-> putInt(key, value)
-                is Long -> putLong(key, value)
-                else -> error("This type cannot be stored into preferences")
-            }
-        }
-    }
 
 }
