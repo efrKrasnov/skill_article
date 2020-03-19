@@ -10,7 +10,7 @@ class PrefDelegate<T: Any>(private val defaultValue: T) :
     @Suppress("UNCHECKED_CAST")
     override fun getValue(thisRef: PrefManager, property: KProperty<*>): T? {
         val preferences = thisRef.preferences
-        val key = defaultValue.javaClass.name
+        val key = defaultValue.toString()
         with(preferences)  {
             return when(defaultValue) {
                 is Boolean -> getBoolean(key, false) as T
@@ -25,7 +25,7 @@ class PrefDelegate<T: Any>(private val defaultValue: T) :
 
     override fun setValue(thisRef: PrefManager, property: KProperty<*>, value: T?) {
         val editor = thisRef.preferences.edit()
-        val key = value!!.javaClass.name
+        val key = value!!.toString()
         with(editor)  {
             when(value) {
                 is Boolean -> putBoolean(key, value)
