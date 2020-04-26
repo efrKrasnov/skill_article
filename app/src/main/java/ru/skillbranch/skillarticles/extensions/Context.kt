@@ -1,5 +1,6 @@
 package ru.skillbranch.skillarticles.extensions
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Resources
 import android.net.ConnectivityManager
@@ -7,6 +8,8 @@ import android.net.NetworkCapabilities
 import android.os.Build
 import android.util.TypedValue
 import androidx.annotation.AttrRes
+import androidx.annotation.ColorInt
+import androidx.core.content.ContextCompat
 
 fun Context.dpToPx(dp: Int): Float {
     return TypedValue.applyDimension(
@@ -35,6 +38,15 @@ fun Context.attrValue(@AttrRes res: Int): Int {
         throw Resources.NotFoundException("Resources with id $res not found")
     }
     return value
+}
+
+@ColorInt
+@SuppressLint("ResourceAsColor")
+fun Context.getColorResCompat(@AttrRes id: Int): Int {
+    val resolvedAttr = TypedValue()
+    theme.resolveAttribute(id, resolvedAttr, true)
+    val colorRes = resolvedAttr.run { if (resourceId != 0) resourceId else data }
+    return ContextCompat.getColor(this, colorRes)
 }
 
 val Context.isNetworkAvailable: Boolean

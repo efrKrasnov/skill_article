@@ -197,11 +197,12 @@ object MarkdownParser {
                     text = string.subSequence(startIndex, endIndex)
                     /* find first space */
                     val spaceIndex = text.indexOf(" ")
-                    /* without dot */
-                    val order = text.subSequence(0, spaceIndex-1).toString()
+                    /* with dot */
+                    val order = text.subSequence(0, spaceIndex).toString()
                     text = text.subSequence(spaceIndex+1, text.length)
 
-                    val element = Element.OrderedListItem(order, text)
+                    val subs = findElements(text)
+                    val element = Element.OrderedListItem(order, text, subs)
                     parents.add(element)
                     lastStartIndex = endIndex
                 }
