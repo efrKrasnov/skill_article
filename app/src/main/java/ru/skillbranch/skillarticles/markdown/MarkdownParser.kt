@@ -18,7 +18,7 @@ object MarkdownParser {
     private const val RULE_GROUP = "(^[-_*]{3}$)"
     private const val INLINE_GROUP = "((?<!`)`[^`\\s].*?[^`\\s]?`(?!`))"
     private const val LINK_GROUP = "(\\[[^\\[\\]]*?]\\(.+?\\)|^\\[*?]\\(.*?\\))"
-    private const val BLOCK_CODE_GROUP = "(^```[\\s\\S]+?```$"
+    private const val BLOCK_CODE_GROUP = "(^```[\\s\\S]+?```$)"
     private const val ORDERED_LIST_ITEM_GROUP = "(^\\d{1,2}\\.\\s.+?$)"
     // result regex
     private const val MARKDOWN_GROUPS =
