@@ -49,15 +49,12 @@ class OrderedListSpan(
 
     private inline fun Paint.withCustomColor(block: () -> Unit) {
         val oldColor = color
-        val oldStyle = style
 
         color = orderColor
-        style = Paint.Style.FILL
 
         block()
 
         color = oldColor
-        style = oldStyle
     }
 
 }

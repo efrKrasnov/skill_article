@@ -18,11 +18,13 @@ object MarkdownParser {
     private const val RULE_GROUP = "(^[-_*]{3}$)"
     private const val INLINE_GROUP = "((?<!`)`[^`\\s].*?[^`\\s]?`(?!`))"
     private const val LINK_GROUP = "(\\[[^\\[\\]]*?]\\(.+?\\)|^\\[*?]\\(.*?\\))"
-    private const val ORDERED_LIST_ITEM_GROUP = "(^[0-9]\\. .+$)"
+    private const val BLOCK_CODE_GROUP = "(^```[\\s\\S]+?```$"
+    private const val ORDERED_LIST_ITEM_GROUP = "(^\\d{1,2}\\.\\s.+?$)"
     // result regex
     private const val MARKDOWN_GROUPS =
         "$UNORDERED_LIST_ITEM_GROUP|$HEADER_GROUP|$QUOTE_GROUP|$ITALIC_GROUP|$BOLD_GROUP" +
-                "|$STRIKE_GROUP|$RULE_GROUP|$INLINE_GROUP|$LINK_GROUP|$ORDERED_LIST_ITEM_GROUP"
+                "|$STRIKE_GROUP|$RULE_GROUP|$INLINE_GROUP|$LINK_GROUP|$BLOCK_CODE_GROUP" +
+                "|$ORDERED_LIST_ITEM_GROUP"
 
     private val elementsPattern by lazy { Pattern.compile(MARKDOWN_GROUPS, Pattern.MULTILINE) }
 
@@ -43,9 +45,8 @@ object MarkdownParser {
             null
         } else    {
             val parsedResult = mutableListOf<Element>()
-            var resultString = ""
             parsedResult.addAll(findElements(string))
-            resultString = getTextFromElement(parsedResult)
+            var resultString = getTextFromElement(parsedResult)
             resultString
         }
     }
@@ -84,7 +85,7 @@ object MarkdownParser {
 
             // counter for ordered list
             /* groups range for iterate by groups */
-            val groups = 1..10
+            val groups = 1..11
             var group = -1
             for (gr in groups) {
                 if (matcher.group(gr) != null) {
@@ -172,7 +173,7 @@ object MarkdownParser {
                     lastStartIndex = endIndex
                 }
 
-                /* RULE */
+                /* INLINE CODE */
                 8 -> {
                     // text without "`{}`"
                     text = string.subSequence(startIndex.inc(), endIndex.dec())
@@ -191,18 +192,48 @@ object MarkdownParser {
                     parents.add(element)
                     lastStartIndex = endIndex
                 }
-                /* ORDERED LIST ITEM */
-                10 -> {
+                /* BLOCK CODE */
+                10 ->   {
                     /* get text */
-                    text = string.subSequence(startIndex, endIndex)
-                    /* find first space */
-                    val spaceIndex = text.indexOf(" ")
-                    /* with dot */
-                    val order = text.subSequence(0, spaceIndex).toString()
-                    text = text.subSequence(spaceIndex+1, text.length)
+                    text = string.subSequence(startIndex.plus(3), endIndex.minus(3))
 
+                    if(text.contains(LINE_SEPARATOR))   {
+                        for ((index, line) in text.lines().withIndex()) {
+                            when (index)    {
+                                text.lines().lastIndex ->   parents.add(
+                                    Element.BlockCode(
+                                        Element.BlockCode.Type.END,
+                                        line
+                                    )
+                                )
+                                0->parents.add(
+                                    Element.BlockCode(
+                                        Element.BlockCode.Type.START,
+                                        line + LINE_SEPARATOR
+                                    )
+                                )
+                                else -> parents.add(
+                                    Element.BlockCode(
+                                        Element.BlockCode.Type.MIDDLE,
+                                        line + LINE_SEPARATOR
+                                    )
+                                )
+                            }
+                        }
+                    }
+                    else    {
+                        parents.add(Element.BlockCode(Element.BlockCode.Type.SINGLE, text))
+                    }
+
+                    lastStartIndex = endIndex
+                }
+                /* ORDERED LIST ITEM */
+                11 -> {
+                    val reg = "(^\\d{1,2}.)".toRegex().find(string.substring(startIndex, endIndex))
+                    val order = reg!!.value
+                    text = string.subSequence(startIndex.plus(order.length.inc()), endIndex).toString()
                     val subs = findElements(text)
-                    val element = Element.OrderedListItem(order, text, subs)
+                    val element = Element.OrderedListItem(order, text.toString(), subs)
                     parents.add(element)
                     lastStartIndex = endIndex
                 }
